@@ -20,12 +20,24 @@ class _BluetoothPageState extends State<BluetoothPage> {
   List<BluetoothDevice> bluetoothDevices = [];
 
   Future<void> initBluetoothStreams() async {
+    // Cancel the previous Bluetooth scan stream if it exists
+    cancelBluetoothStreams();
+
+    // Clear the list of Bluetooth devices to refresh it
+    bluetoothDevices.clear();
+
     bluetoothScanStream = _flutterSysInfoPlugin.bluetoothScanStream;
 
     if (bluetoothScanStream != null) {
       _bluetoothScanStreamSubscription = bluetoothScanStream?.listen((event) {
         debugPrint('Bluetooth scan stream: $event');
-        bluetoothDevices.add(event);
+
+        // If the event is valid, add it to the list
+        if (event != null) {
+          bluetoothDevices.add(event);
+        }
+
+        // Refresh the UI with the new list of devices
         setState(() {});
       });
     } else {
@@ -64,9 +76,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
       appBar: AppBar(
         title: const Text('Bluetooth Page'),
         actions: [
-          IconButton(
-              onPressed: () => cancelBluetoothStreams(),
-              icon: Icon(Icons.cancel_outlined))
+  
         ],
       ),
       floatingActionButton: FloatingActionButton(
