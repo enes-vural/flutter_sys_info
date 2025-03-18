@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_sys_info/flutter_sys_info.dart';
 
@@ -76,7 +75,9 @@ class _StreamPageState extends State<StreamPage> {
   @override
   void initState() {
     super.initState();
+
     initStreams();
+  
   }
 
   @override

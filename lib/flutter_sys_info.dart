@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_sys_info/constants/enums/enums.dart';
 import 'package:flutter_sys_info/helper/switch_memory_type.dart';
+import 'package:flutter_sys_info/model/bluetooth_device.dart';
 import 'flutter_sys_info_platform_interface.dart';
 
 export 'constants/enums/enums.dart';
@@ -28,6 +29,10 @@ class FlutterSysInfoNetwork {
 }
 
 class FlutterSysInfo {
+
+  static const EventChannel _bluetoothScanChannel =
+      EventChannel('bluetooth_scan_stream');
+
   static const EventChannel _batteryLevelChannel =
       EventChannel('battery_level_stream');
 
@@ -38,6 +43,13 @@ class FlutterSysInfo {
 
   static const EventChannel _wifiConnectionChannel =
       EventChannel('internet_connection_stream');
+
+
+  Stream<BluetoothDevice> get bluetoothScanStream {
+    return _bluetoothScanChannel
+        .receiveBroadcastStream('bluetooth_scan_stream')
+        .map((event) => BluetoothDevice.fromMap(event));
+  }
 
   Stream<int> get batteryLevelStream {
     return _batteryLevelChannel
@@ -66,8 +78,6 @@ class FlutterSysInfo {
   Future<double?> getBatteryTemperature() {
     return FlutterSysInfoPlatform.instance.getBatteryTemperature();
   }
-
-
 
   Future<String?> getPlatformVersion() {
     return FlutterSysInfoPlatform.instance.getPlatformVersion();
