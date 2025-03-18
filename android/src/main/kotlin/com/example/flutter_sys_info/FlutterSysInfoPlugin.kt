@@ -34,6 +34,7 @@ class FlutterSysInfoPlugin: FlutterPlugin, MethodCallHandler {
   private lateinit var batteryTempEventChannel: EventChannel
   private lateinit var wifiRssiEventChannel: EventChannel
   private lateinit var internetConnectionStream: EventChannel
+  private lateinit var bluetoothScanStream: EventChannel
   
 
 
@@ -56,6 +57,9 @@ class FlutterSysInfoPlugin: FlutterPlugin, MethodCallHandler {
 
     internetConnectionStream = EventChannel(flutterPluginBinding.binaryMessenger,"internet_connection_stream")
     internetConnectionStream.setStreamHandler(eventHandler)
+
+    bluetoothScanStream = EventChannel(flutterPluginBinding.binaryMessenger,"bluetooth_scan_stream")
+    bluetoothScanStream.setStreamHandler(eventHandler)
 
   }
 

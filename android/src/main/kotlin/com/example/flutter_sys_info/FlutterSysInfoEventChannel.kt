@@ -2,6 +2,10 @@ package com.example.flutter_sys_info
 
 import io.flutter.plugin.common.EventChannel
 
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothManager
+
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.net.wifi.WifiInfo
@@ -40,6 +44,12 @@ class SysInfoEventHandler(private val context: Context) : EventChannel.StreamHan
     private var isInternetAvailableEventListening: Boolean = false
     // Boolean flag for checking is Internet Connection Available
     private var isInternetAvailable: Boolean = false
+
+    private var bluetoothEventSink: EventChannel.EventSink? = null
+    private var bluetoothAdapter:BluetoothAdapter? = null
+    // Boolean flag for checking is Bluetooth Event Listening
+    // this flag is used to prevent multiple registration & unregistration of the same event
+    private var isBluetoothEventListening: Boolean = false
 
     //private function to check internet connection with ConnectivityManager package from android
     private fun checkInternetConnection() {
@@ -101,6 +111,29 @@ class SysInfoEventHandler(private val context: Context) : EventChannel.StreamHan
         }
     }
 
+    private val deviceFoundReceiver = object: BroadcastReceiver(){
+        override fun onReceive(context:Context?,intent:Intent?){
+            val action = intent?.action
+            if(BluetoothDevice.ACTION_FOUND==action){
+                val device: BluetoothDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)!!
+                val rssi: Short = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE)
+                
+                if(device != null){
+                    //new TODO:
+                    val deviceName = device.name ?: "N/A"
+                    val deviceAddress = device.address
+
+                    val bluetoothData: MutableMap<String, Any> = mutableMapOf()
+                    bluetoothData["deviceName"] = deviceName
+                    bluetoothData["deviceAddress"] = deviceAddress
+                    bluetoothData["rssi"] = rssi
+                    bluetoothEventSink?.success(bluetoothData);
+                }
+
+            }
+        }
+    }
+
     override fun onListen(arguments: Any?, events: EventChannel.EventSink?) {
         //TODO:
         //this print statement is used to check the argument for debugging
@@ -118,6 +151,49 @@ class SysInfoEventHandler(private val context: Context) : EventChannel.StreamHan
                 //register the receiver with Intent.ACTION_BATTERY_CHANGED intent
                 val batteryIntentFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
                 context.registerReceiver(batteryStatusReceiver, batteryIntentFilter)
+            }
+
+            "bluetooth_scan_stream" -> {
+                //is bluetooth event alredy listening then escape
+                if (isBluetoothEventListening) return
+                //change boolean flag
+                isBluetoothEventListening = true
+                bluetoothEventSink = events
+                
+                //This method was deprecated in API level 31. this method will continue to work, 
+                //but developers are strongly encouraged to migrate to using BluetoothManager.getAdapter(), 
+                //since that approach enables support for Context.createAttributionContext.
+                //for more information about merge. please visit this link
+                //https://developer.android.com/reference/android/bluetooth/BluetoothAdapter#getDefaultAdapter()
+
+                val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+                bluetoothAdapter = bluetoothManager.adapter
+
+                // if(bluetoothAdapter == null) {
+                //     events?.error("UNAVAILABLE", "Bluetooth is not available", null)
+                //     return
+                // }
+
+                // val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+                // bluetoothAdapter = bluetoothManager.adapter
+
+
+                if(bluetoothAdapter == null){
+                    events?.error("UNAVAILABLE", "Bluetooth is not available", null)
+                    return
+                }
+
+                bluetoothAdapter?.let{adapter-> 
+                val isBluetoothEnabled = adapter.isEnabled
+                if(!isBluetoothEnabled){
+                    adapter.enable()
+                }
+
+                val bluetoothIntentFilter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+                context.registerReceiver(deviceFoundReceiver, bluetoothIntentFilter)
+
+                adapter.startDiscovery()
+                }
             }
 
             "wifi_rssi_stream" -> {
@@ -167,6 +243,22 @@ class SysInfoEventHandler(private val context: Context) : EventChannel.StreamHan
         println("Received argument to Cancel: $argumentString")
 
         when (arguments as? String) {
+            "bluetooth_scan_stream"->{
+                //if bluetooth event is not listening then escape
+                if (!isBluetoothEventListening) return
+                //change boolean flag
+                isBluetoothEventListening = false
+                bluetoothEventSink = null
+                //unregister the receiver
+                try {
+                    context.unregisterReceiver(deviceFoundReceiver)
+                    println("Bluetooth receiver unregistered successfully.")
+                } catch (e: IllegalArgumentException) {
+                    // Handle potential exception if the receiver wasn't registered
+                    println("Failed to unregister receiver: ${e.message}")
+                }
+                    }
+
             "battery_level_stream" -> {
                 //if battery event is not listening then escape
                 if (!isBatteryEventListening) return

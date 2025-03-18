@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_sys_info/flutter_sys_info.dart';
+import 'package:flutter_sys_info_example/bluetooth/bluetooth_page.dart';
 import 'package:flutter_sys_info_example/stream_page.dart';
 
 //import 'package:permission_handler/permission_handler.dart';
@@ -108,19 +109,46 @@ class _MethodPageState extends State<MethodPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Scaffold'dan gelen context'i kullan
-          Navigator.push(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation1, animation2) =>
-                  const StreamPage(),
-              transitionDuration: const Duration(seconds: 1),
+      floatingActionButton: Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          Positioned(
+            bottom: 80,
+            right: 20,
+            child: FloatingActionButton(
+              heroTag: 'stream',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation1, animation2) =>
+                        const StreamPage(),
+                    transitionDuration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: Icon(Icons.data_array_outlined),
             ),
-          );
-        },
-        child: const Icon(Icons.arrow_forward_outlined),
+          ),
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              heroTag: 'bluetooth',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  PageRouteBuilder(
+                    pageBuilder: (context, animation1, animation2) =>
+                        const BluetoothPage(),
+                    transitionDuration: const Duration(seconds: 1),
+                  ),
+                );
+              },
+              child: Icon(Icons.bluetooth),
+            ),
+          ),
+        ],
       ),
       appBar: AppBar(
         title: const Text('Plugin example app'),
